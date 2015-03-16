@@ -1,8 +1,8 @@
 /// Written in the D programming language.
-/// @date 2015, Joakim Brännström
-/// @copyright MIT License
-/// @author Joakim Brännström (joakim.brannstrom@gmx.com)
-module srcgen.base;
+/// Date: 2015, Joakim Brännström
+/// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
+/// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
+module dsrcgen.base;
 import std.algorithm;
 import std.ascii;
 import std.conv;

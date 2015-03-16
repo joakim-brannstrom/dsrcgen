@@ -1,8 +1,8 @@
 /// Written in the D programming language.
-/// @date 2015, Joakim Brännström
-/// @copyright MIT License
-/// @author Joakim Brännström (joakim.brannstrom@gmx.com)
-module srcgen.cpp;
+/// Date: 2015, Joakim Brännström
+/// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
+/// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
+module dsrcgen.cpp;
 import std.algorithm;
 import std.ascii;
 import std.conv;
@@ -10,14 +10,14 @@ import std.string;
 
 import tested;
 
-import srcgen.base;
-import srcgen.c;
+import dsrcgen.base;
+import dsrcgen.c;
 
 version (unittest) {
     shared static this() {
         import std.exception;
 
-        enforce(runUnitTests!(srcgen.cpp)(new ConsoleTestResultWriter), "Unit tests failed.");
+        enforce(runUnitTests!(dsrcgen.cpp)(new ConsoleTestResultWriter), "Unit tests failed.");
     }
 }
 
@@ -44,8 +44,7 @@ mixin template CppModuleX() {
     }
 
     auto dtor(T)(T class_name) {
-        auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(
-            class_name)));
+        auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(class_name)));
         return e;
     }
 

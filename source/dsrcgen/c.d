@@ -1,8 +1,8 @@
 /// Written in the D programming language.
 /// Date: 2015, Joakim Brännström
-/// License: MIT License
+/// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
 /// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
-module srcgen.c;
+module dsrcgen.c;
 import std.algorithm;
 import std.ascii;
 import std.conv;
@@ -10,14 +10,14 @@ import std.string;
 
 import tested;
 
-import srcgen.base;
+import dsrcgen.base;
 
 version (unittest) {
     shared static this() {
         import std.exception;
 
         //runUnitTests!app(new JsonTestResultWriter("results.json"));
-        enforce(runUnitTests!(srcgen.c)(new ConsoleTestResultWriter), "Unit tests failed.");
+        enforce(runUnitTests!(dsrcgen.c)(new ConsoleTestResultWriter), "Unit tests failed.");
     }
 }
 
@@ -129,8 +129,8 @@ mixin template CModuleX() {
     }
 
     auto for_(T0, T1, T2)(T0 init, T1 cond, T2 next) {
-        return suite(format("for (%s; %s; %s)", to!string(init), to!string(cond), to!string(
-            next)));
+        return suite(format("for (%s; %s; %s)", to!string(init),
+            to!string(cond), to!string(next)));
     }
 
     auto while_(T)(T cond) {
@@ -530,5 +530,6 @@ content text
 #endif // somefile_hpp
 footer text
 // footer comment
-""", hdr.render);
+""",
+        hdr.render);
 }
