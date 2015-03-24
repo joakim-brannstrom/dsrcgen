@@ -317,7 +317,7 @@ struct CppHModule {
 }
 
 @name("Test of statements") unittest {
-    string expect = """    77;
+    string expect = "    77;
     break;
     continue;
     return 5;
@@ -326,7 +326,7 @@ struct CppHModule {
     bar:
     #define foobar
     #define smurf 1
-""";
+";
 
     auto x = new CModule();
 
@@ -347,7 +347,7 @@ struct CppHModule {
 }
 
 @name("Test of suites") unittest {
-    string expect = """
+    string expect = "
     foo {
     }
     if (foo) {
@@ -371,7 +371,7 @@ struct CppHModule {
     int foobar(int x) {
     }
     int fun(int y);
-""";
+";
 
     auto x = new CModule();
     with (x) {
@@ -400,7 +400,7 @@ struct CppHModule {
 }
 
 @name("Test of complicated switch") unittest {
-    string expect = """
+    string expect = "
     switch (x) {
         case 0:
             return 5;
@@ -411,7 +411,7 @@ struct CppHModule {
         default:
             return -1;
     }
-""";
+";
 
     auto x = new CModule();
     with (x) {
@@ -493,13 +493,13 @@ struct CppHModule {
             comment("bar");
         }
     }
-    assert(x.render() == """foo {
+    assert(x.render() == "foo {
 bar
     smurf {
         // bar
     }
 }
-""", x.render);
+", x.render);
 }
 
 @name("Test of text in CModule with guard") unittest {
@@ -521,7 +521,7 @@ bar
         comment("footer comment");
     }
 
-    assert(hdr.render == """header text
+    assert(hdr.render == "header text
 // header comment
 #ifndef somefile_hpp
 #define somefile_hpp
@@ -530,6 +530,6 @@ content text
 #endif // somefile_hpp
 footer text
 // footer comment
-""",
+",
         hdr.render);
 }

@@ -100,7 +100,7 @@ class CppModule : BaseModule {
 }
 
 @name("Test of C++ suits") unittest {
-    string expect = """
+    string expect = "
     namespace foo {
     } //NS:foo
     class Foo {
@@ -116,7 +116,7 @@ class CppModule : BaseModule {
         return 7;
     private:
         return 8;
-""";
+";
     auto x = new CppModule();
     with (x) {
         sep;
