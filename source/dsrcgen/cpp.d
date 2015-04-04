@@ -108,6 +108,30 @@ mixin template CppModuleX() {
         e[$.begin = newline, $.end = ""];
         return e;
     }
+
+    auto method(T0, T1)(bool virtual_, T0 return_type, T1 name, bool const_) {
+        auto e = suite(format("%s%s %s()%s", virtual_ ? "virtual " : "",
+            to!string(return_type), to!string(name), const_ ? " const" : ""));
+        return e;
+    }
+
+    auto method(T0, T1, T...)(bool virtual_, T0 return_type, T1 name, bool const_,
+        auto ref T args) {
+        string params;
+        if (args.length >= 1) {
+            params = to!string(args[0]);
+        }
+        if (args.length >= 2) {
+            foreach (v; args[1 .. $]) {
+                params ~= ", " ~ to!string(v);
+            }
+        }
+
+        auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
+            to!string(return_type), to!string(name), params, const_ ? " const" : ""));
+        return e;
+    }
+
 }
 
 class CppModule : BaseModule {
