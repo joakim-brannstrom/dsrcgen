@@ -43,6 +43,22 @@ mixin template CppModuleX() {
         return e;
     }
 
+    /** Virtual d'tor.
+     * Params:
+     *  virtual_ = if evaluated to true prepend with virtual.
+     *  class_name = name of the class to create a d'tor for.
+     * Example:
+     * ----
+     * dtor(true, "Foo");
+     * ----
+     * TODO better solution for virtual. A boolean is kind of adhoc.
+     */
+    auto dtor(T)(bool virtual_, T class_name) {
+        auto e = suite(format("%s%s%s()", virtual_ ? "virtual " : "",
+            class_name[0] == '~' ? "" : "~", to!string(class_name)));
+        return e;
+    }
+
     auto dtor(T)(T class_name) {
         auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(class_name)));
         return e;
