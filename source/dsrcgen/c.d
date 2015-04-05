@@ -116,6 +116,12 @@ mixin template CModuleX() {
         return e;
     }
 
+    auto struct_(T)(T name) {
+        auto e = suite(format("struct %s ", name));
+        e[$.end = "};" ~ newline];
+        return e;
+    }
+
     auto if_(T)(T cond) {
         return suite(format("if (%s)", cond));
     }
