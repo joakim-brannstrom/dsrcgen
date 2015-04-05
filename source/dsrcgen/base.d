@@ -99,7 +99,7 @@ class BaseModule : BaseElement {
         return to!string(indent) ~ s;
     }
 
-    void _append(BaseElement e) {
+    void append(BaseElement e) {
         children ~= e;
         sep_lines = 0;
     }

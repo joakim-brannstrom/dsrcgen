@@ -50,13 +50,13 @@ mixin template CModuleX() {
 
     auto comment(string comment) {
         auto e = new Comment(comment);
-        _append(e);
+        append(e);
         return this;
     }
 
     auto text(T)(T content) {
         auto e = new Text(to!string(content));
-        _append(e);
+        append(e);
         return this;
     }
 
@@ -64,14 +64,14 @@ mixin template CModuleX() {
 
     auto base() {
         auto e = new typeof(this);
-        _append(e);
+        append(e);
         return e;
     }
 
     // Statements
     auto stmt(T)(T stmt_) {
         auto e = new Stmt!(typeof(this))(to!string(stmt_));
-        _append(e);
+        append(e);
         sep();
         return e;
     }
@@ -112,7 +112,7 @@ mixin template CModuleX() {
     // Suites
     auto suite(T)(T headline) {
         auto e = new Suite!(typeof(this))(to!string(headline));
-        _append(e);
+        append(e);
         return e;
     }
 
@@ -284,8 +284,8 @@ class Suite(T) : T {
     }
 }
 
-/// Code generation for C++ header.
-struct CppHModule {
+/// Code generation for C header.
+struct CHModule {
     string ifdef_guard;
     CModule doc;
     CModule header;
@@ -297,6 +297,9 @@ struct CppHModule {
         this.ifdef_guard = ifdef_guard;
         doc = new CModule;
         with (doc) {
+            // doc is a container of the modules so should not affect indent.
+            // header, content and footer is containers so should not affect indent.
+            // ifndef guard usually never affect indent.
             suppress_indent(1);
             header = base;
             header.suppress_indent(1);
@@ -503,7 +506,7 @@ bar
 }
 
 @name("Test of text in CModule with guard") unittest {
-    auto hdr = CppHModule("somefile_hpp");
+    auto hdr = CHModule("somefile_hpp");
 
     with (hdr.header) {
         text("header text");

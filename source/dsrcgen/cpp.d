@@ -139,6 +139,39 @@ class CppModule : BaseModule {
     mixin CppModuleX;
 }
 
+/// Code generation for C++ header.
+struct CppHModule {
+    CppModule doc;
+    CppModule header;
+    CppModule content;
+    CppModule footer;
+
+    this(string ifdef_guard) {
+        // Must suppress indentation to generate what is expected by the user.
+        doc = new CppModule;
+        with (doc) {
+            // doc is a container of the modules so should not affect indent.
+            // header, content and footer is containers so should not affect indent.
+            // ifndef guard usually never affect indent.
+            suppress_indent(1);
+            header = base;
+            header.suppress_indent(1);
+            with (IFNDEF(ifdef_guard)) {
+                suppress_indent(1);
+                define(ifdef_guard);
+                content = base;
+                content.suppress_indent(1);
+            }
+            footer = base;
+            footer.suppress_indent(1);
+        }
+    }
+
+    auto render() {
+        return doc.render();
+    }
+}
+
 @name("Test of C++ suits") unittest {
     string expect = "
     namespace foo {
