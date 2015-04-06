@@ -4,16 +4,11 @@
     "copyright": "Copyright © 2014, Joakim Brännström",
     "authors": ["Joakim Brännström"],
     "license": "BSL-1.0",
+
     "dependencies": {
-        "tested": {"version": ">=0.9.4"},
+        "tested": {"version": ">=0.9.4"}
     },
 
-    "targetPath": "build",
     "targetType": "library",
-
-    "configurations": [
-        {"name": "release",
-            "targetName": "dsrcgen",
-        }
-    ]
+    "targetPath": "build"
 }
