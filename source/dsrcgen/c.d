@@ -117,7 +117,7 @@ mixin template CModuleX() {
     }
 
     auto struct_(T)(T name) {
-        auto e = suite(format("struct %s ", name));
+        auto e = suite(format("struct %s", name));
         e[$.end = "};" ~ newline];
         return e;
     }
