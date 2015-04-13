@@ -109,6 +109,23 @@ mixin template CModuleX() {
         return e;
     }
 
+    auto include(T)(T filename) {
+        string f = to!string(filename);
+        string incl;
+
+        if (f.length > 1 && f[0] == '<') {
+            incl = format("#include %s", f);
+        }
+        else {
+            ///TODO ugly way. Does other string literals exist that could be used instead?
+            incl = format("#include %s%s%s", '"', f, '"');
+        }
+
+        auto e = stmt(incl);
+        e[$.end = ""];
+        return e;
+    }
+
     // Suites
     auto suite(T)(T headline) {
         auto e = new Suite!(typeof(this))(to!string(headline));
