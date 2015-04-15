@@ -23,16 +23,38 @@ version (unittest) {
 
 mixin template CppModuleX() {
     // Suites
+    /** Suites for C++ definitions for a class.
+     * Useful for implementiong ctor, dtor and member methods for a class.
+     * Params:
+     *  class_name = name of the class.
+     *  headline = whatever to append after class_name.
+     * Example:
+     * ----
+     * class_suite("Simple", "Simple()");
+     * ----
+     * Generated code:
+     * ----
+     * Simple::Simple() {
+     * }
+     * ----
+     */
+    auto class_suite(T0, T1)(T0 class_name, T1 headline) {
+        auto tmp = format("%s::%s", to!string(class_name), to!string(headline));
+        auto e = new Suite!(typeof(this))(to!string(tmp));
+        append(e);
+        return e;
+    }
+
+    auto class_suite(T0, T1, T2)(T0 rval, T1 class_name, T1 headline) {
+        auto tmp = format("%s %s::%s", to!string(rval),
+            to!string(class_name), to!string(headline));
+        auto e = new Suite!(typeof(this))(to!string(tmp));
+        append(e);
+        return e;
+    }
+
     auto ctor(T0, T...)(T0 class_name, auto ref T args) {
-        string params;
-        if (args.length >= 1) {
-            params = to!string(args[0]);
-        }
-        if (args.length >= 2) {
-            foreach (v; args[1 .. $]) {
-                params ~= ", " ~ to!string(v);
-            }
-        }
+        string params = this.paramsToString(args);
 
         auto e = suite(format("%s(%s)", to!string(class_name), params));
         return e;
@@ -40,6 +62,18 @@ mixin template CppModuleX() {
 
     auto ctor(T)(T class_name) {
         auto e = suite(format("%s()", to!string(class_name)));
+        return e;
+    }
+
+    auto ctor_body(T0, T...)(T0 class_name, auto ref T args) {
+        string params = this.paramsToString(args);
+
+        auto e = class_suite(class_name, format("%s(%s)", to!string(class_name), params));
+        return e;
+    }
+
+    auto ctor_body(T)(T class_name) {
+        auto e = class_suite(class_name, format("%s()", to!string(class_name)));
         return e;
     }
 
@@ -61,6 +95,16 @@ mixin template CppModuleX() {
 
     auto dtor(T)(T class_name) {
         auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(class_name)));
+        return e;
+    }
+
+    /// Definition for a dtor.
+    auto dtor_body(T)(T class_name) {
+        string s = to!string(class_name);
+        if (s[0] == '~') {
+            s = s[1 .. $];
+        }
+        auto e = class_suite(class_name, format("~%s()", s));
         return e;
     }
 
@@ -117,6 +161,30 @@ mixin template CppModuleX() {
 
     auto method(T0, T1, T...)(bool virtual_, T0 return_type, T1 name, bool const_,
         auto ref T args) {
+        string params = this.paramsToString(args);
+
+        auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
+            to!string(return_type), to!string(name), params, const_ ? " const" : ""));
+        return e;
+    }
+
+    auto method_body(T0, T1, T2)(T0 return_type, T1 class_name, T2 name, bool const_) {
+        auto e = suite(format("%s %s::%s()%s", to!string(return_type),
+            to!string(class_name), to!string(name), const_ ? " const" : ""));
+        return e;
+    }
+
+    auto method_body(T0, T1, T2, T...)(in T0 return_type, in T1 class_name,
+        in T2 name, bool const_, auto ref T args) {
+        string params = this.paramsToString(args);
+
+        auto e = suite(format("%s %s::%s(%s)%s", to!string(return_type),
+            to!string(class_name), to!string(name), params, const_ ? " const" : ""));
+        return e;
+    }
+
+private:
+    string paramsToString(T...)(auto ref T args) {
         string params;
         if (args.length >= 1) {
             params = to!string(args[0]);
@@ -126,12 +194,8 @@ mixin template CppModuleX() {
                 params ~= ", " ~ to!string(v);
             }
         }
-
-        auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
-            to!string(return_type), to!string(name), params, const_ ? " const" : ""));
-        return e;
+        return params;
     }
-
 }
 
 class CppModule : BaseModule {
