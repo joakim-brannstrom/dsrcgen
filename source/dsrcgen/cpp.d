@@ -11,7 +11,8 @@ import std.string;
 import tested;
 
 import dsrcgen.base;
-import dsrcgen.c;
+
+public import dsrcgen.c;
 
 version (unittest) {
     shared static this() {

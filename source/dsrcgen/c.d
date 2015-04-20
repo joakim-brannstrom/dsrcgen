@@ -54,8 +54,14 @@ mixin template CModuleX() {
         return this;
     }
 
+    auto text(string content) {
+        auto e = new Text!(typeof(this))(cast(string) content);
+        append(e);
+        return this;
+    }
+
     auto text(T)(T content) {
-        auto e = new Text(to!string(content));
+        auto e = new Text!(typeof(this))(to!string(content));
         append(e);
         return this;
     }
@@ -244,7 +250,7 @@ string stmt_append_end(string s, in ref string[string] attrs) pure nothrow @safe
 
     if (!in_pattern && s[0] != '#') {
         string end = ";";
-        if ("end"in attrs) {
+        if ("end" in attrs) {
             end = attrs["end"];
         }
         s ~= end;
@@ -286,7 +292,7 @@ class Suite(T) : T {
 
     override string _render_indent(int level) {
         string r = headline ~ " {" ~ newline;
-        if ("begin"in attrs) {
+        if ("begin" in attrs) {
             r = headline ~ attrs["begin"];
         }
         if (r.length > 0) {
@@ -297,13 +303,61 @@ class Suite(T) : T {
 
     override string _render_post_recursive(int level) {
         string r = "}" ~ newline;
-        if ("end"in attrs) {
+        if ("end" in attrs) {
             r = attrs["end"];
         }
-        if (r.length > 0 && !("noindent"in attrs)) {
+        if (r.length > 0 && !("noindent" in attrs)) {
             r = indent(r, level);
         }
         return r;
+    }
+}
+
+struct E {
+    private string content;
+
+    this(string content) {
+        this.content = content;
+    }
+
+    this(T)(T content) {
+        this.content = to!string(content);
+    }
+
+    auto opCall(T)(T value) {
+        content = format("%s(%s)", content, to!string(value));
+        return this;
+    }
+
+    // implicit
+    @property string toString() pure const {
+        return content;
+    }
+
+    alias toString this;
+
+    // explicit
+    T opCast(T : string)() pure const {
+        return content;
+    }
+
+    auto opBinary(string op, T)(in T rhs) pure nothrow {
+        static if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%" || op == "&") {
+            content = mixin("content~\" " ~ op ~ " \"~to!string(rhs)");
+            return this;
+        }
+        else static if (op == "~") {
+            content = content ~ " " ~ to!string(rhs);
+            return this;
+        }
+        else {
+            static assert(0, "Operator " ~ op ~ " not implemented");
+        }
+    }
+
+    auto opAssign(T)(T rhs) {
+        this.content = content ~ " = " ~ to!string(rhs);
+        return this;
     }
 }
 
@@ -558,4 +612,51 @@ footer text
 // footer comment
 ",
         hdr.render);
+}
+
+@name("Test of Expression. Type conversion")
+unittest {
+    string implicit = E("foo")(77);
+    assert("foo(77)" == implicit, implicit);
+
+    auto explicit = cast(string) E("foo")(77);
+    assert("foo(77)" == explicit, explicit);
+
+    auto to_string = to!string(E("foo")(77));
+    assert("foo(77)" == to_string, to_string);
+}
+
+@name("Test of Expression")
+unittest {
+    string expect = "foo
+foo(77)
+77 + 3
+77 - 3
+44 - 3 + 7
+(44 - 3 + 7)
+foo(42 + 43)
+int x = 7
+";
+    auto x = new CModule();
+    x.suppress_indent(1);
+
+    x.text("foo");
+    x.sep;
+    x.text(E("foo")(77));
+    x.sep;
+    x.text(E(77) + 3);
+    x.sep;
+    x.text(E(77) - 3);
+    x.sep;
+    x.text(E(44) - E(3) + E(7));
+    x.sep;
+    x.text(E()(E(44) - E(3) + E(7)));
+    x.sep;
+    x.text(E("foo")(E(42) + 43));
+    x.sep;
+    x.text(E("int x") = 7);
+    x.sep;
+
+    auto rval = x.render;
+    assert(rval == expect, rval);
 }

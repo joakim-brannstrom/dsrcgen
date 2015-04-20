@@ -39,7 +39,7 @@ interface BaseElement {
     abstract string _render_post_recursive(int level);
 }
 
-class Text : BaseModule {
+class Text(T) : T {
     string contents;
     this(string contents) {
         this.contents = contents;
@@ -84,7 +84,7 @@ class BaseModule : BaseElement {
         if (count <= 0)
             return;
         foreach (i; 0 .. count) {
-            children ~= new Text(newline);
+            children ~= new Text!(typeof(this))(newline);
         }
 
         sep_lines += count;
