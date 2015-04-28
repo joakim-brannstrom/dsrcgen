@@ -324,6 +324,20 @@ struct E {
         this.content = to!string(content);
     }
 
+    this(E lhs, string rhs) {
+        this.content = lhs.content ~ "." ~ rhs;
+    }
+
+    auto e(string lhs) {
+        this.content ~= "." ~ lhs;
+        return this;
+    }
+
+    auto e(E lhs) {
+        this.content ~= "." ~ lhs.content;
+        return this;
+    }
+
     auto opCall(T)(T value) {
         content = format("%s(%s)", content, to!string(value));
         return this;
@@ -341,9 +355,23 @@ struct E {
         return content;
     }
 
+    auto opUnary(string op)() {
+        static if (op == "+" || op == "-" || op == "*" || op == "++" || op == "--") {
+            content = mixin("\"" ~ op ~ "\"content~\"");
+            return this;
+        }
+        else {
+            static assert(0, "Operator " ~ op ~ " not implemented");
+        }
+    }
+
     auto opBinary(string op, T)(in T rhs) pure nothrow {
         static if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%" || op == "&") {
             content = mixin("content~\" " ~ op ~ " \"~to!string(rhs)");
+            return this;
+        }
+        else static if (op == "~" && is(T == E)) {
+            content = content ~ rhs.content;
             return this;
         }
         else static if (op == "~") {
