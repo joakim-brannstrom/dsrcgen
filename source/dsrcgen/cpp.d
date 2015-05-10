@@ -58,11 +58,13 @@ mixin template CppModuleX() {
         string params = this.paramsToString(args);
 
         auto e = suite(format("%s(%s)", to!string(class_name), params));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
     auto ctor(T)(T class_name) {
         auto e = suite(format("%s()", to!string(class_name)));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
@@ -91,11 +93,13 @@ mixin template CppModuleX() {
     auto dtor(T)(bool virtual_, T class_name) {
         auto e = suite(format("%s%s%s()", virtual_ ? "virtual " : "",
             class_name[0] == '~' ? "" : "~", to!string(class_name)));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
     auto dtor(T)(T class_name) {
         auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(class_name)));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
@@ -157,6 +161,7 @@ mixin template CppModuleX() {
     auto method(T0, T1)(bool virtual_, T0 return_type, T1 name, bool const_) {
         auto e = suite(format("%s%s %s()%s", virtual_ ? "virtual " : "",
             to!string(return_type), to!string(name), const_ ? " const" : ""));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
@@ -166,6 +171,7 @@ mixin template CppModuleX() {
 
         auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
             to!string(return_type), to!string(name), params, const_ ? " const" : ""));
+        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
