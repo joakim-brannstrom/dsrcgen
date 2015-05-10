@@ -313,7 +313,7 @@ class Suite(T) : T {
     }
 }
 
-struct E {
+@safe pure struct E {
     private string content;
 
     this(string content) {
