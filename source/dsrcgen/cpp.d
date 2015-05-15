@@ -23,6 +23,11 @@ version (unittest) {
 }
 
 mixin template CppModuleX() {
+    // Statements
+    auto friend(T)(T expr) {
+        return stmt("friend " ~ to!string(expr));
+    }
+
     // Suites
     /** Suites for C++ definitions for a class.
      * Useful for implementiong ctor, dtor and member methods for a class.
