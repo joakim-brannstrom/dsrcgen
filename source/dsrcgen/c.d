@@ -189,20 +189,25 @@ mixin template CModuleX() {
     }
 
     auto func(T0, T1)(T0 return_type, T1 name) {
-        auto e = suite(format("%s %s()", to!string(return_type), to!string(name)));
+        auto e = stmt(format("%s %s()", to!string(return_type), to!string(name)));
         return e;
     }
 
     auto func(T0, T1, T...)(T0 return_type, T1 name, auto ref T args) {
-        string params;
-        if (args.length >= 1) {
-            params = to!string(args[0]);
-        }
-        if (args.length >= 2) {
-            foreach (v; args[1 .. $]) {
-                params ~= ", " ~ to!string(v);
-            }
-        }
+        string params = this.paramsToString(args);
+
+        auto e = stmt(format("%s %s(%s)", to!string(return_type), to!string(name),
+            params));
+        return e;
+    }
+
+    auto func_body(T0, T1)(T0 return_type, T1 name) {
+        auto e = suite(format("%s %s()", to!string(return_type), to!string(name)));
+        return e;
+    }
+
+    auto func_body(T0, T1, T...)(T0 return_type, T1 name, auto ref T args) {
+        string params = this.paramsToString(args);
 
         auto e = suite(format("%s %s(%s)", to!string(return_type), to!string(name),
             params));
@@ -234,13 +239,27 @@ mixin template CModuleX() {
     auto ELSE(T)(T cond) {
         return stmt(format("#else %s", to!string(cond)));
     }
+
+private:
+    string paramsToString(T...)(auto ref T args) {
+        string params;
+        if (args.length >= 1) {
+            params = to!string(args[0]);
+        }
+        if (args.length >= 2) {
+            foreach (v; args[1 .. $]) {
+                params ~= ", " ~ to!string(v);
+            }
+        }
+        return params;
+    }
 }
 
 class CModule : BaseModule {
     mixin CModuleX;
 }
 
-string stmt_append_end(string s, in ref string[string] attrs) pure nothrow @safe {
+private string stmt_append_end(string s, in ref string[string] attrs) pure nothrow @safe {
     bool in_pattern = false;
     try {
         in_pattern = inPattern(s[$ - 1], ";:,{");
@@ -498,9 +517,8 @@ struct CHModule {
         with (default_) {
             stmt("foobar");
         }
-        func("int", "foobar", "int x");
-        auto y = func("int", "fun", "int y");
-        y[$.begin = ";", $.end = newline, $.noindent = true];
+        func_body("int", "foobar", "int x");
+        func("int", "fun", "int y");
     }
 
     auto rval = x.render;

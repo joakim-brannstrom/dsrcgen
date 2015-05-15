@@ -164,9 +164,8 @@ mixin template CppModuleX() {
     }
 
     auto method(T0, T1)(bool virtual_, T0 return_type, T1 name, bool const_) {
-        auto e = suite(format("%s%s %s()%s", virtual_ ? "virtual " : "",
+        auto e = stmt(format("%s%s %s()%s", virtual_ ? "virtual " : "",
             to!string(return_type), to!string(name), const_ ? " const" : ""));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
@@ -174,9 +173,8 @@ mixin template CppModuleX() {
         auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
+        auto e = stmt(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
             to!string(return_type), to!string(name), params, const_ ? " const" : ""));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         return e;
     }
 
@@ -193,20 +191,6 @@ mixin template CppModuleX() {
         auto e = suite(format("%s %s::%s(%s)%s", to!string(return_type),
             to!string(class_name), to!string(name), params, const_ ? " const" : ""));
         return e;
-    }
-
-private:
-    string paramsToString(T...)(auto ref T args) {
-        string params;
-        if (args.length >= 1) {
-            params = to!string(args[0]);
-        }
-        if (args.length >= 2) {
-            foreach (v; args[1 .. $]) {
-                params ~= ", " ~ to!string(v);
-            }
-        }
-        return params;
     }
 }
 
