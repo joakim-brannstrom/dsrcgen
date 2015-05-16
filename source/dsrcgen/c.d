@@ -440,7 +440,6 @@ struct CHModule {
             header = base;
             header.suppressIndent(1);
             with (IFNDEF(ifdef_guard)) {
-                suppressIndent(1);
                 define(ifdef_guard);
                 content = base;
                 content.suppressIndent(1);
