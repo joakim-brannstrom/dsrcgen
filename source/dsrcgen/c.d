@@ -25,7 +25,7 @@ class Comment : BaseModule {
         this.contents = contents;
     }
 
-    override string _render_indent(int parent_level, int level) {
+    override string renderIndent(int parent_level, int level) {
         return indent("// " ~ contents, parent_level, level);
     }
 }
@@ -211,7 +211,7 @@ mixin template CModuleX() {
         auto e = suite("#if " ~ name);
         e[$.begin = "", $.end = "#endif // " ~ name];
         e.sep;
-        e.suppress_indent(1);
+        e.suppressIndent(1);
         return e;
     }
 
@@ -219,7 +219,7 @@ mixin template CModuleX() {
         auto e = suite(format("#ifdef %s", name));
         e[$.begin = "", $.end = "#endif // " ~ name];
         e.sep;
-        e.suppress_indent(1);
+        e.suppressIndent(1);
         return e;
     }
 
@@ -227,7 +227,7 @@ mixin template CModuleX() {
         auto e = suite("#ifndef " ~ name);
         e[$.begin = "", $.end = "#endif // " ~ name];
         e.sep;
-        e.suppress_indent(1);
+        e.suppressIndent(1);
         return e;
     }
 
@@ -294,7 +294,7 @@ class Stmt(T) : T {
         this.headline = headline;
     }
 
-    override string _render_indent(int parent_level, int level) {
+    override string renderIndent(int parent_level, int level) {
         string s = stmt_append_end(headline, attrs);
         return indent(s, parent_level, level);
     }
@@ -314,7 +314,7 @@ class Suite(T) : T {
         this.headline = headline;
     }
 
-    override string _render_indent(int parent_level, int level) {
+    override string renderIndent(int parent_level, int level) {
         import std.ascii : newline;
 
         string r = headline ~ " {" ~ newline;
@@ -328,7 +328,7 @@ class Suite(T) : T {
         return r;
     }
 
-    override string _render_post_recursive(int parent_level, int level) {
+    override string renderPostRecursive(int parent_level, int level) {
         string r = "}";
         if ("end" in attrs) {
             r = attrs["end"];
@@ -436,17 +436,17 @@ struct CHModule {
             // doc is a container of the modules so should not affect indent.
             // header, content and footer is containers so should not affect indent.
             // ifndef guard usually never affect indent.
-            suppress_indent(1);
+            suppressIndent(1);
             header = base;
-            header.suppress_indent(1);
+            header.suppressIndent(1);
             with (IFNDEF(ifdef_guard)) {
-                suppress_indent(1);
+                suppressIndent(1);
                 define(ifdef_guard);
                 content = base;
-                content.suppress_indent(1);
+                content.suppressIndent(1);
             }
             footer = base;
-            footer.suppress_indent(1);
+            footer.suppressIndent(1);
         }
     }
 
@@ -753,7 +753,7 @@ foo(42 + 43)
 int x = 7
 ";
     auto x = new CModule();
-    x.suppress_indent(1);
+    x.suppressIndent(1);
 
     x.text("foo");
     x.sep;
@@ -818,7 +818,7 @@ L1 1.2 {
     auto x = new CModule();
 
     with (x) {
-        suppress_indent(1);
+        suppressIndent(1);
         with (suite("L1 1")) {
             suite("L1 1.1");
             with (suite("L1 1.2")) {
@@ -848,13 +848,13 @@ L1 1.2.1 {
     auto x = new CModule();
 
     with (x) {
-        suppress_indent(1);
+        suppressIndent(1);
         // suppressing L1 1 to be on the same level as x
         // affects L1 1 and the first level of children
         with (suite("L1 1")) {
             suite("L1 1.1"); // suppressed
             with (suite("L1 1.2")) {
-                suppress_indent(1);
+                suppressIndent(1);
                 with (suite("L1 1.2.1")) { // suppressed
                     suite("L2 1.2.1.1");
                 }

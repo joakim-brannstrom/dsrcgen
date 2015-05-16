@@ -197,17 +197,17 @@ struct CppHModule {
             // doc is a container of the modules so should not affect indent.
             // header, content and footer is containers so should not affect indent.
             // ifndef guard usually never affect indent.
-            suppress_indent(1);
+            suppressIndent(1);
             header = base;
-            header.suppress_indent(1);
+            header.suppressIndent(1);
             with (IFNDEF(ifdef_guard)) {
-                suppress_indent(1);
+                suppressIndent(1);
                 define(ifdef_guard);
                 content = base;
-                content.suppress_indent(1);
+                content.suppressIndent(1);
             }
             footer = base;
-            footer.suppress_indent(1);
+            footer.suppressIndent(1);
         }
     }
 
