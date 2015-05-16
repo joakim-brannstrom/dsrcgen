@@ -3,16 +3,13 @@
 /// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
 /// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
 module dsrcgen.c;
-import std.algorithm;
-import std.ascii;
-import std.conv;
-import std.string;
 
 import tested;
 
 import dsrcgen.base;
 
 version (unittest) {
+
     shared static this() {
         import std.exception;
 
@@ -26,15 +23,16 @@ class Comment : BaseModule {
     string contents;
     this(string contents) {
         this.contents = contents;
-        sep();
     }
 
-    override string _render_indent(int level) {
-        return indent("// " ~ contents, level);
+    override string _render_indent(int parent_level, int level) {
+        return indent("// " ~ contents, parent_level, level);
     }
 }
 
 mixin template CModuleX() {
+    import std.string;
+
     string[string] attrs;
 
     auto opIndex(T...)(T kvs) {
@@ -50,20 +48,15 @@ mixin template CModuleX() {
 
     auto comment(string comment) {
         auto e = new Comment(comment);
+        e.sep;
         append(e);
-        return this;
+        return e;
     }
 
     auto text(string content) {
-        auto e = new Text!(typeof(this))(cast(string) content);
+        auto e = new Text!(typeof(this))(content);
         append(e);
-        return this;
-    }
-
-    auto text(T)(T content) {
-        auto e = new Text!(typeof(this))(to!string(content));
-        append(e);
-        return this;
+        return e;
     }
 
     alias opCall = text;
@@ -75,10 +68,12 @@ mixin template CModuleX() {
     }
 
     // Statements
-    auto stmt(T)(T stmt_) {
-        auto e = new Stmt!(typeof(this))(to!string(stmt_));
+    auto stmt(string stmt_, bool separator = true) {
+        auto e = new Stmt!(typeof(this))(stmt_);
         append(e);
-        sep();
+        if (separator) {
+            sep();
+        }
         return e;
     }
 
@@ -90,8 +85,8 @@ mixin template CModuleX() {
         return stmt("continue");
     }
 
-    auto return_(T)(T expr) {
-        return stmt(format("return %s", to!string(expr)));
+    auto return_(string expr) {
+        return stmt("return " ~ expr);
     }
 
     auto goto_(string name) {
@@ -108,15 +103,15 @@ mixin template CModuleX() {
         return e;
     }
 
-    auto define(T)(string name, T value) {
+    auto define(string name, string value) {
         // may need to replace \n with \\\n
-        auto e = stmt(format("#define %s %s", name, to!string(value)));
+        auto e = stmt(format("#define %s %s", name, value));
         e[$.end = ""];
         return e;
     }
 
-    auto include(T)(T filename) {
-        string f = to!string(filename);
+    auto include(string filename) {
+        string f = filename;
         string incl;
 
         if (f.length > 1 && f[0] == '<') {
@@ -127,29 +122,30 @@ mixin template CModuleX() {
             incl = format("#include %s%s%s", '"', f, '"');
         }
 
-        auto e = stmt(incl);
-        e[$.end = ""];
+        auto e = stmt(incl)[$.end = ""];
         return e;
     }
 
     // Suites
-    auto suite(T)(T headline) {
-        auto e = new Suite!(typeof(this))(to!string(headline));
+    auto suite(string headline, bool separator = true) {
+        auto e = new Suite!(typeof(this))(headline);
         append(e);
+        if (separator) {
+            sep();
+        }
         return e;
     }
 
-    auto struct_(T)(T name) {
-        auto e = suite(format("struct %s", name));
-        e[$.end = "};" ~ newline];
+    auto struct_(string name) {
+        auto e = suite("struct " ~ name)[$.end = "};"];
         return e;
     }
 
-    auto if_(T)(T cond) {
+    auto if_(string cond) {
         return suite(format("if (%s)", cond));
     }
 
-    auto else_if(T)(T cond) {
+    auto else_if(string cond) {
         return suite(format("else if (%s)", cond));
     }
 
@@ -157,91 +153,98 @@ mixin template CModuleX() {
         return suite("else");
     }
 
-    auto for_(T0, T1, T2)(T0 init, T1 cond, T2 next) {
-        return suite(format("for (%s; %s; %s)", to!string(init),
-            to!string(cond), to!string(next)));
+    auto for_(string init, string cond, string next) {
+        return suite(format("for (%s; %s; %s)", init, cond, next));
     }
 
-    auto while_(T)(T cond) {
-        return suite(format("while (%s)", to!string(cond)));
+    auto while_(string cond) {
+        return suite(format("while (%s)", cond));
     }
 
-    auto do_while(T)(T cond) {
+    auto do_while(string cond) {
         auto e = suite("do");
-        e[$.end = format("} while (%s);%s", to!string(cond), newline)];
+        e[$.end = format("} while (%s);", cond)];
         return e;
     }
 
-    auto switch_(T)(T cond) {
-        return suite(format("switch (%s)", to!string(cond)));
+    auto switch_(string cond) {
+        return suite(format("switch (%s)", cond));
     }
 
-    auto case_(T)(T val) {
-        auto e = suite(format("case %s:", to!string(val)));
-        e[$.begin = newline, $.end = ""];
+    auto case_(string val) {
+        auto e = suite(format("case %s:", val), false)[$.begin = "", $.end = ""];
+        e.sep;
         return e;
     }
 
     auto default_() {
-        auto e = suite("default:");
-        e[$.begin = newline, $.end = ""];
+        auto e = suite("default:", false)[$.begin = "", $.end = ""];
+        e.sep;
         return e;
     }
 
-    auto func(T0, T1)(T0 return_type, T1 name) {
-        auto e = stmt(format("%s %s()", to!string(return_type), to!string(name)));
+    auto func(string return_type, string name) {
+        auto e = stmt(format("%s %s()", return_type, name));
         return e;
     }
 
-    auto func(T0, T1, T...)(T0 return_type, T1 name, auto ref T args) {
+    auto func(T...)(string return_type, string name, auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = stmt(format("%s %s(%s)", to!string(return_type), to!string(name),
-            params));
+        auto e = stmt(format("%s %s(%s)", return_type, name, params));
         return e;
     }
 
-    auto func_body(T0, T1)(T0 return_type, T1 name) {
-        auto e = suite(format("%s %s()", to!string(return_type), to!string(name)));
+    auto func_body(string return_type, string name) {
+        auto e = suite(format("%s %s()", return_type, name));
         return e;
     }
 
-    auto func_body(T0, T1, T...)(T0 return_type, T1 name, auto ref T args) {
+    auto func_body(T...)(string return_type, string name, auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = suite(format("%s %s(%s)", to!string(return_type), to!string(name),
-            params));
+        auto e = suite(format("%s %s(%s)", return_type, name, params));
         return e;
     }
 
-    auto IF(T)(T name) {
-        auto e = suite(format("#if %s", to!string(name)));
-        e[$.begin = newline, $.end = format("#endif // %s%s", name, newline)];
+    auto IF(string name) {
+        auto e = suite("#if " ~ name);
+        e[$.begin = "", $.end = "#endif // " ~ name];
+        e.sep;
+        e.suppress_indent(1);
         return e;
     }
 
-    auto IFDEF(T)(T name) {
-        auto e = suite(format("#ifdef %s", to!string(name)));
-        e[$.begin = newline, $.end = format("#endif // %s%s", name, newline)];
+    auto IFDEF(string name) {
+        auto e = suite(format("#ifdef %s", name));
+        e[$.begin = "", $.end = "#endif // " ~ name];
+        e.sep;
+        e.suppress_indent(1);
         return e;
     }
 
-    auto IFNDEF(T)(T name) {
-        auto e = suite(format("#ifndef %s", to!string(name)));
-        e[$.begin = newline, $.end = format("#endif // %s%s", name, newline)];
+    auto IFNDEF(string name) {
+        auto e = suite("#ifndef " ~ name);
+        e[$.begin = "", $.end = "#endif // " ~ name];
+        e.sep;
+        e.suppress_indent(1);
         return e;
     }
 
-    auto ELIF(T)(T cond) {
-        return stmt(format("#elif %s", to!string(cond)));
+    auto ELIF(string cond) {
+        auto e = stmt("#elif " ~ cond);
+        return e;
     }
 
-    auto ELSE(T)(T cond) {
-        return stmt(format("#else %s", to!string(cond)));
+    auto ELSE() {
+        auto e = stmt("#else");
+        return e;
     }
 
 private:
     string paramsToString(T...)(auto ref T args) {
+        import std.conv : to;
+
         string params;
         if (args.length >= 1) {
             params = to!string(args[0]);
@@ -260,6 +263,8 @@ class CModule : BaseModule {
 }
 
 private string stmt_append_end(string s, in ref string[string] attrs) pure nothrow @safe {
+    import std.string : inPattern;
+
     bool in_pattern = false;
     try {
         in_pattern = inPattern(s[$ - 1], ";:,{");
@@ -283,15 +288,15 @@ private string stmt_append_end(string s, in ref string[string] attrs) pure nothr
  *    <recursive>
  */
 class Stmt(T) : T {
-    string stmt;
+    private string headline;
 
-    this(string stmt) {
-        this.stmt = stmt;
+    this(string headline) {
+        this.headline = headline;
     }
 
-    override string _render_indent(int level) {
-        string s = stmt_append_end(stmt, attrs);
-        return indent(s, level);
+    override string _render_indent(int parent_level, int level) {
+        string s = stmt_append_end(headline, attrs);
+        return indent(s, parent_level, level);
     }
 }
 
@@ -303,36 +308,43 @@ class Stmt(T) : T {
  * r.length > 0 catches the case when begin or end is empty string. Used in switch/case.
  */
 class Suite(T) : T {
-    string headline;
+    private string headline;
 
     this(string headline) {
         this.headline = headline;
     }
 
-    override string _render_indent(int level) {
+    override string _render_indent(int parent_level, int level) {
+        import std.ascii : newline;
+
         string r = headline ~ " {" ~ newline;
         if ("begin" in attrs) {
             r = headline ~ attrs["begin"];
         }
-        if (r.length > 0) {
-            r = indent(r, level);
+
+        if (r.length > 0 && !("noindent" in attrs)) {
+            r = indent(r, parent_level, level);
         }
         return r;
     }
 
-    override string _render_post_recursive(int level) {
-        string r = "}" ~ newline;
+    override string _render_post_recursive(int parent_level, int level) {
+        string r = "}";
         if ("end" in attrs) {
             r = attrs["end"];
         }
+
         if (r.length > 0 && !("noindent" in attrs)) {
-            r = indent(r, level);
+            r = indent(r, parent_level, level);
         }
         return r;
     }
 }
 
 @safe pure struct E {
+    import std.conv : to;
+    import std.string : format;
+
     private string content;
 
     this(string content) {
@@ -443,7 +455,8 @@ struct CHModule {
     }
 }
 
-@name("Test of statements") unittest {
+@name("Test of statements")
+unittest {
     string expect = "    77;
     break;
     continue;
@@ -458,22 +471,68 @@ struct CHModule {
     auto x = new CModule();
 
     with (x) {
-        stmt(77);
+        stmt(E(77));
         break_;
         continue_;
-        return_(5);
+        return_(E(5));
         return_("long_value");
         goto_("foo");
         label("bar");
         define("foobar");
-        define("smurf", 1);
+        define("smurf", E(1));
     }
 
     auto rval = x.render();
     assert(rval == expect, rval);
 }
 
-@name("Test of suites") unittest {
+@name("Test of preprocess statements")
+unittest {
+    string expect = "    #if foo
+    inside;
+    if {
+        deep inside;
+    }
+    #endif // foo
+    #ifdef bar
+    inside;
+    #endif // bar
+    #ifndef foobar
+    inside;
+    #elif wee
+    inside;
+    #else
+    inside;
+    #endif // foobar
+";
+
+    auto x = new CModule();
+
+    with (x) {
+        with (IF("foo")) {
+            stmt("inside");
+            with (suite("if")) {
+                stmt("deep inside");
+            }
+        }
+        with (IFDEF("bar")) {
+            stmt("inside");
+        }
+        with (IFNDEF("foobar")) {
+            stmt("inside");
+            ELIF("wee");
+            stmt("inside");
+            ELSE();
+            stmt("inside");
+        }
+    }
+
+    auto rval = x.render();
+    assert(rval == expect, rval);
+}
+
+@name("Test of suites")
+unittest {
     string expect = "
     foo {
     }
@@ -525,7 +584,8 @@ struct CHModule {
     assert(rval == expect, rval);
 }
 
-@name("Test of complicated switch") unittest {
+@name("Test of complicated switch")
+unittest {
     string expect = "
     switch (x) {
         case 0:
@@ -543,16 +603,16 @@ struct CHModule {
     with (x) {
         sep();
         with (switch_("x")) {
-            with (case_(0)) {
-                return_(5);
+            with (case_(E(0))) {
+                return_(E(5));
                 break_;
             }
-            with (case_(1)) {
-                return_(3);
+            with (case_(E(1))) {
+                return_(E(3));
                 break_;
             }
             with (default_) {
-                return_(-1);
+                return_(E(-1));
             }
         }
     }
@@ -561,12 +621,14 @@ struct CHModule {
     assert(rval == expect, rval);
 }
 
-@name("Test of empty CSuite") unittest {
+@name("Test of empty CSuite")
+unittest {
     auto x = new Suite!CModule("test");
-    assert(x.render == "test {\n}\n", x.render);
+    assert(x.render == "test {\n}", x.render);
 }
 
-@name("Test of stmt_append_end") unittest {
+@name("Test of stmt_append_end")
+unittest {
     string[string] attrs;
     string stmt = "some_line";
     string result = stmt_append_end(stmt, attrs);
@@ -580,29 +642,33 @@ struct CHModule {
     assert(stmt ~ "{" == result, result);
 }
 
-@name("Test of CSuite with formatting") unittest {
+@name("Test of CSuite with formatting")
+unittest {
     auto x = new Suite!CModule("if (x > 5)");
-    assert(x.render() == "if (x > 5) {\n}\n", x.render);
+    assert(x.render() == "if (x > 5) {\n}", x.render);
 }
 
-@name("Test of CSuite with simple text") unittest {
+@name("Test of CSuite with simple text")
+unittest {
     // also test that text(..) do NOT add a linebreak
     auto x = new Suite!CModule("foo");
     with (x) {
         text("bar");
     }
-    assert(x.render() == "foo {\nbar}\n", x.render);
+    assert(x.render() == "foo {\nbar}", x.render);
 }
 
-@name("Test of CSuite with simple text and changed begin") unittest {
+@name("Test of CSuite with simple text and changed begin")
+unittest {
     auto x = new Suite!CModule("foo");
     with (x[$.begin = "_:_"]) {
         text("bar");
     }
-    assert(x.render() == "foo_:_bar}\n", x.render);
+    assert(x.render() == "foo_:_bar}", x.render);
 }
 
-@name("Test of CSuite with simple text and changed end") unittest {
+@name("Test of CSuite with simple text and changed end")
+unittest {
     auto x = new Suite!CModule("foo");
     with (x[$.end = "_:_"]) {
         text("bar");
@@ -610,7 +676,8 @@ struct CHModule {
     assert(x.render() == "foo {\nbar_:_", x.render);
 }
 
-@name("Test of nested CSuite") unittest {
+@name("Test of nested CSuite")
+unittest {
     auto x = new Suite!CModule("foo");
     with (x) {
         text("bar");
@@ -624,11 +691,11 @@ bar
     smurf {
         // bar
     }
-}
-", x.render);
+}", x.render);
 }
 
-@name("Test of text in CModule with guard") unittest {
+@name("Test of text in CModule with guard")
+unittest {
     auto hdr = CHModule("somefile_hpp");
 
     with (hdr.header) {
@@ -662,6 +729,8 @@ footer text
 
 @name("Test of Expression. Type conversion")
 unittest {
+    import std.conv : to;
+
     string implicit = E("foo")(77);
     assert("foo(77)" == implicit, implicit);
 
@@ -704,5 +773,95 @@ int x = 7
     x.sep;
 
     auto rval = x.render;
+    assert(rval == expect, rval);
+}
+
+@name("Test of indent")
+unittest {
+    string expect = "    L2 1 {
+        L3 1.1 {
+        }
+        L3 1.2 {
+            L4 1.2.1 {
+            }
+        }
+    }
+";
+
+    auto x = new CModule();
+
+    with (x) {
+        with (suite("L2 1")) {
+            suite("L3 1.1");
+            with (suite("L3 1.2")) {
+                suite("L4 1.2.1");
+            }
+        }
+    }
+
+    auto rval = x.render();
+    assert(rval == expect, rval);
+}
+
+@name("Test of single suppressing of indent")
+unittest {
+    string expect = "L1 1 {
+L1 1.1 {
+}
+L1 1.2 {
+    L2 1.2.1 {
+    }
+}
+}
+";
+
+    auto x = new CModule();
+
+    with (x) {
+        suppress_indent(1);
+        with (suite("L1 1")) {
+            suite("L1 1.1");
+            with (suite("L1 1.2")) {
+                suite("L2 1.2.1");
+            }
+        }
+    }
+
+    auto rval = x.render();
+    assert(rval == expect, rval);
+}
+
+@name("Test of nested suppressing of indent")
+unittest {
+    string expect = "L1 1 {
+L1 1.1 {
+}
+L1 1.2 {
+L1 1.2.1 {
+    L2 1.2.1.1 {
+    }
+}
+}
+}
+";
+
+    auto x = new CModule();
+
+    with (x) {
+        suppress_indent(1);
+        // suppressing L1 1 to be on the same level as x
+        // affects L1 1 and the first level of children
+        with (suite("L1 1")) {
+            suite("L1 1.1"); // suppressed
+            with (suite("L1 1.2")) {
+                suppress_indent(1);
+                with (suite("L1 1.2.1")) { // suppressed
+                    suite("L2 1.2.1.1");
+                }
+            }
+        }
+    }
+
+    auto rval = x.render();
     assert(rval == expect, rval);
 }

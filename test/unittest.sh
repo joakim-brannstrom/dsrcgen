@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 echo "Building tests"
 dub build -b unittest

@@ -3,15 +3,14 @@
 /// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
 /// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
 module dsrcgen.base;
-import std.algorithm;
-import std.ascii;
-import std.conv;
 
 struct KV {
     string k;
     string v;
 
     this(T)(string k, T v) {
+        import std.conv : to;
+
         this.k = k;
         this.v = to!string(v);
     }
@@ -34,29 +33,24 @@ struct AttrSetter {
 
 interface BaseElement {
     abstract string render();
-    abstract string _render_indent(int level);
-    abstract string _render_recursive(int level);
-    abstract string _render_post_recursive(int level);
+    abstract string _render_indent(int parent_level, int level);
+    abstract string _render_recursive(int parent_level, int level);
+    abstract string _render_post_recursive(int parent_level, int level);
 }
 
 class Text(T) : T {
-    string contents;
+    private string contents;
+
     this(string contents) {
         this.contents = contents;
     }
 
-    override string _render_indent(int level) {
+    override string _render_indent(int parent_level, int level) {
         return contents;
     }
 }
 
 class BaseModule : BaseElement {
-    int indent_width = 4;
-
-    BaseElement[] children;
-    int sep_lines;
-    int suppress_indent_;
-
     this() {
     }
 
@@ -64,7 +58,8 @@ class BaseModule : BaseElement {
         this.indent_width = indent_width;
     }
 
-    /// Number of levels to suppress indent
+    /// Number of levels to suppress indent of children.
+    /// Propagated to leafs.
     void suppress_indent(int levels) {
         this.suppress_indent_ = levels;
     }
@@ -80,6 +75,8 @@ class BaseModule : BaseElement {
 
     /// Separate with at most count empty lines.
     void sep(int count = 1) {
+        import std.ascii : newline;
+
         count -= sep_lines;
         if (count <= 0)
             return;
@@ -90,8 +87,16 @@ class BaseModule : BaseElement {
         sep_lines += count;
     }
 
-    string indent(string s, int level) {
-        level = max(0, level);
+    void append(BaseElement e) {
+        children ~= e;
+        sep_lines = 0;
+    }
+
+    string indent(string s, int parent_level, int level) {
+        import std.algorithm : max;
+        import std.conv : to;
+
+        level = max(0, parent_level, level);
         char[] indent;
         indent.length = indent_width * level;
         indent[] = ' ';
@@ -99,38 +104,39 @@ class BaseModule : BaseElement {
         return to!string(indent) ~ s;
     }
 
-    void append(BaseElement e) {
-        children ~= e;
-        sep_lines = 0;
-    }
-
-    override string _render_indent(int level) {
+    override string _render_indent(int parent_level, int level) {
         return "";
     }
 
-    override string _render_recursive(int level) {
-        level -= suppress_indent_;
-        string s = _render_indent(level);
+    override string _render_recursive(int parent_level, int level) {
+        import std.algorithm : max;
 
+        string s = _render_indent(parent_level, level);
+
+        // suppressing is intented to affects children. The current leaf is
+        // intented according to the parent or propagated level.
+        int child_level = level - suppress_indent_;
         foreach (e; children) {
-            s ~= e._render_recursive(level + 1);
+            // lock indent to the level of the parent. it allows a suppression of many levels of children.
+            s ~= e._render_recursive(max(parent_level, child_level), child_level + 1);
         }
-        s ~= _render_post_recursive(level);
+        s ~= _render_post_recursive(parent_level, level);
 
         return s;
     }
 
-    override string _render_post_recursive(int level) {
+    override string _render_post_recursive(int parent_level, int level) {
         return "";
     }
 
     override string render() {
-        string s = _render_indent(0);
-        foreach (e; children) {
-            s ~= e._render_recursive(0 - suppress_indent_);
-        }
-        s ~= _render_post_recursive(0);
-
-        return _render_recursive(0);
+        return _render_recursive(0 - suppress_indent_, 0 - suppress_indent_);
     }
+
+private:
+    int indent_width = 4;
+    int suppress_indent_;
+
+    BaseElement[] children;
+    int sep_lines;
 }

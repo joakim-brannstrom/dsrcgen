@@ -3,10 +3,6 @@
 /// License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost Software License 1.0)
 /// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
 module dsrcgen.cpp;
-import std.algorithm;
-import std.ascii;
-import std.conv;
-import std.string;
 
 import tested;
 
@@ -24,8 +20,8 @@ version (unittest) {
 
 mixin template CppModuleX() {
     // Statements
-    auto friend(T)(T expr) {
-        return stmt("friend " ~ to!string(expr));
+    auto friend(string expr) {
+        return stmt("friend " ~ expr);
     }
 
     // Suites
@@ -44,44 +40,41 @@ mixin template CppModuleX() {
      * }
      * ----
      */
-    auto class_suite(T0, T1)(T0 class_name, T1 headline) {
-        auto tmp = format("%s::%s", to!string(class_name), to!string(headline));
-        auto e = new Suite!(typeof(this))(to!string(tmp));
+    auto class_suite(string class_name, string headline) {
+        auto tmp = format("%s::%s", class_name, headline);
+        auto e = new Suite!(typeof(this))(tmp);
         append(e);
         return e;
     }
 
-    auto class_suite(T0, T1, T2)(T0 rval, T1 class_name, T1 headline) {
-        auto tmp = format("%s %s::%s", to!string(rval),
-            to!string(class_name), to!string(headline));
-        auto e = new Suite!(typeof(this))(to!string(tmp));
+    auto class_suite(string rval, string class_name, string headline) {
+        auto tmp = format("%s %s::%s", rval, class_name, headline);
+        auto e = new Suite!(typeof(this))(tmp);
         append(e);
         return e;
     }
 
-    auto ctor(T0, T...)(T0 class_name, auto ref T args) {
+    auto ctor(T...)(string class_name, auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = suite(format("%s(%s)", to!string(class_name), params));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
+        auto e = stmt(format("%s(%s)", class_name, params));
         return e;
     }
 
-    auto ctor(T)(T class_name) {
-        auto e = suite(format("%s()", to!string(class_name)));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
+    auto ctor(string class_name) {
+        auto e = stmt(class_name ~ "()");
         return e;
     }
 
-    auto ctor_body(T0, T...)(T0 class_name, auto ref T args) {
+    auto ctor_body(T...)(string class_name, auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = class_suite(class_name, format("%s(%s)", to!string(class_name), params));
+        auto e = class_suite(class_name, format("%s(%s)", class_name, params));
         return e;
     }
 
-    auto ctor_body(T)(T class_name) {
-        auto e = class_suite(class_name, format("%s()", to!string(class_name)));
+    auto ctor_body(string class_name) {
+        auto e = class_suite(class_name, format("%s()", class_name));
         return e;
     }
 
@@ -95,22 +88,20 @@ mixin template CppModuleX() {
      * ----
      * TODO better solution for virtual. A boolean is kind of adhoc.
      */
-    auto dtor(T)(bool virtual_, T class_name) {
-        auto e = suite(format("%s%s%s()", virtual_ ? "virtual " : "",
-            class_name[0] == '~' ? "" : "~", to!string(class_name)));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
+    auto dtor(bool virtual_, string class_name) {
+        auto e = stmt(format("%s%s%s()", virtual_ ? "virtual " : "",
+            class_name[0] == '~' ? "" : "~", class_name));
         return e;
     }
 
-    auto dtor(T)(T class_name) {
-        auto e = suite(format("%s%s()", class_name[0] == '~' ? "" : "~", to!string(class_name)));
-        e[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
+    auto dtor(string class_name) {
+        auto e = stmt(format("%s%s()", class_name[0] == '~' ? "" : "~", class_name));
         return e;
     }
 
     /// Definition for a dtor.
-    auto dtor_body(T)(T class_name) {
-        string s = to!string(class_name);
+    auto dtor_body(string class_name) {
+        string s = class_name;
         if (s[0] == '~') {
             s = s[1 .. $];
         }
@@ -118,78 +109,71 @@ mixin template CppModuleX() {
         return e;
     }
 
-    auto namespace(T)(T name) {
-        string n = to!string(name);
-        auto e = suite(format("namespace %s", n));
-        e[$.end = format("} //NS:%s%s", n, newline)];
+    auto namespace(string n) {
+        auto e = suite("namespace " ~ n)[$.end = "} //NS:" ~ n];
         return e;
     }
 
-    auto class_(T)(T name) {
-        string n = to!string(name);
-        auto e = suite(format("class %s", n));
-        e[$.end = format("};%s", newline)];
+    auto class_(string n) {
+        auto e = suite("class " ~ n)[$.end = "};"];
         return e;
     }
 
-    auto class_(T0, T1)(T0 name, T1 inherit) {
-        string n = to!string(name);
-        string ih = to!string(inherit);
-        if (ih.length == 0) {
+    auto class_(string name, string inherit) {
+        if (inherit.length == 0) {
             return class_(name);
         }
         else {
-            auto e = suite(format("class %s : %s", n, ih));
-            e[$.end = format("};%s", newline)];
+            auto e = suite(format("class %s : %s", name, inherit))[$.end = "};"];
             return e;
         }
     }
 
     auto public_() {
-        auto e = suite("public:");
-        e[$.begin = newline, $.end = ""];
+        auto e = suite("public:", false)[$.begin = "", $.end = ""];
+        e.sep;
         return e;
     }
 
     auto protected_() {
-        auto e = suite("protected:");
-        e[$.begin = newline, $.end = ""];
+        auto e = suite("protected:", false)[$.begin = "", $.end = ""];
+        e.sep;
         return e;
     }
 
     auto private_() {
-        auto e = suite("private:");
-        e[$.begin = newline, $.end = ""];
+        auto e = suite("private:", false)[$.begin = "", $.end = ""];
+        e.sep;
         return e;
     }
 
-    auto method(T0, T1)(bool virtual_, T0 return_type, T1 name, bool const_) {
+    auto method(bool virtual_, string return_type, string name, bool const_) {
         auto e = stmt(format("%s%s %s()%s", virtual_ ? "virtual " : "",
-            to!string(return_type), to!string(name), const_ ? " const" : ""));
+            return_type, name, const_ ? " const" : ""));
         return e;
     }
 
-    auto method(T0, T1, T...)(bool virtual_, T0 return_type, T1 name, bool const_,
+    auto method(T...)(bool virtual_, string return_type, string name, bool const_,
         auto ref T args) {
         string params = this.paramsToString(args);
 
         auto e = stmt(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
-            to!string(return_type), to!string(name), params, const_ ? " const" : ""));
+            return_type, name, params, const_ ? " const" : ""));
         return e;
     }
 
-    auto method_body(T0, T1, T2)(T0 return_type, T1 class_name, T2 name, bool const_) {
-        auto e = suite(format("%s %s::%s()%s", to!string(return_type),
-            to!string(class_name), to!string(name), const_ ? " const" : ""));
+    auto method_body(string return_type, string class_name, string name, bool const_) {
+        auto e = suite(format("%s %s::%s()%s", return_type, class_name, name,
+            const_ ? " const" : ""));
         return e;
     }
 
-    auto method_body(T0, T1, T2, T...)(in T0 return_type, in T1 class_name,
-        in T2 name, bool const_, auto ref T args) {
+    auto method_body(T...)(string return_type, string class_name, string name,
+        bool const_, auto ref T args) {
         string params = this.paramsToString(args);
 
-        auto e = suite(format("%s %s::%s(%s)%s", to!string(return_type),
-            to!string(class_name), to!string(name), params, const_ ? " const" : ""));
+        auto e = suite(format("%s %s::%s(%s)%s", return_type, class_name, name,
+            params, const_ ? " const" : ""));
         return e;
     }
 }
@@ -232,7 +216,8 @@ struct CppHModule {
     }
 }
 
-@name("Test of C++ suits") unittest {
+@name("Test of C++ suits")
+unittest {
     string expect = "
     namespace foo {
     } //NS:foo
@@ -256,21 +241,18 @@ struct CppHModule {
         namespace("foo");
         with (class_("Foo")) {
             auto ctor0 = ctor("Foo");
-            ctor0[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
             auto ctor1 = ctor("Foo", "int y");
-            ctor1[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
             auto dtor0 = dtor("Foo");
-            dtor0[$.begin = "", $.end = ";" ~ newline, $.noindent = true];
         }
         class_("Foo", "Bar");
         with (public_) {
-            return_(5);
+            return_(E(5));
         }
         with (protected_) {
-            return_(7);
+            return_(E(7));
         }
         with (private_) {
-            return_(8);
+            return_(E(8));
         }
     }
 
