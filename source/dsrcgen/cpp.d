@@ -131,18 +131,21 @@ mixin template CppModuleX() {
 
     auto public_() {
         auto e = suite("public:", false)[$.begin = "", $.end = ""];
+        e.suppressThisIndent(1);
         e.sep;
         return e;
     }
 
     auto protected_() {
         auto e = suite("protected:", false)[$.begin = "", $.end = ""];
+        e.suppressThisIndent(1);
         e.sep;
         return e;
     }
 
     auto private_() {
         auto e = suite("private:", false)[$.begin = "", $.end = ""];
+        e.suppressThisIndent(1);
         e.sep;
         return e;
     }
@@ -221,24 +224,26 @@ unittest {
     namespace foo {
     } //NS:foo
     class Foo {
+    public:
         Foo();
         Foo(int y);
         ~Foo();
     };
     class Foo : Bar {
     };
-    public:
-        return 5;
-    protected:
-        return 7;
-    private:
-        return 8;
+public:
+    return 5;
+protected:
+    return 7;
+private:
+    return 8;
 ";
     auto x = new CppModule();
     with (x) {
         sep;
         namespace("foo");
         with (class_("Foo")) {
+            public_;
             auto ctor0 = ctor("Foo");
             auto ctor1 = ctor("Foo", "int y");
             auto dtor0 = dtor("Foo");

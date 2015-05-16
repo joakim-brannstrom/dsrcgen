@@ -295,8 +295,13 @@ class Stmt(T) : T {
     }
 
     override string renderIndent(int parent_level, int level) {
-        string s = stmt_append_end(headline, attrs);
-        return indent(s, parent_level, level);
+        string r = stmt_append_end(headline, attrs);
+
+        if (r.length > 0 && !("noindent" in attrs)) {
+            r = indent(r, parent_level, level);
+        }
+
+        return r;
     }
 }
 

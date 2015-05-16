@@ -61,6 +61,10 @@ class BaseModule : BaseElement {
     /// Number of levels to suppress indent of children.
     /// Propagated to leafs.
     void suppressIndent(int levels) {
+        this.suppress_child_indent = levels;
+    }
+
+    void suppressThisIndent(int levels) {
         this.suppress_indent = levels;
     }
 
@@ -111,14 +115,15 @@ class BaseModule : BaseElement {
     override string renderRecursive(int parent_level, int level) {
         import std.algorithm : max;
 
+        level -= suppress_indent;
         string s = renderIndent(parent_level, level);
 
         // suppressing is intented to affects children. The current leaf is
         // intented according to the parent or propagated level.
-        int child_level = level - suppress_indent;
+        int child_level = level - suppress_child_indent;
         foreach (e; children) {
             // lock indent to the level of the parent. it allows a suppression of many levels of children.
-            s ~= e.renderRecursive(max(parent_level, child_level), child_level + 1);
+            s ~= e.renderRecursive(max(parent_level, level), child_level + 1);
         }
         s ~= renderPostRecursive(parent_level, level);
 
@@ -130,12 +135,13 @@ class BaseModule : BaseElement {
     }
 
     override string render() {
-        return renderRecursive(0 - suppress_indent, 0 - suppress_indent);
+        return renderRecursive(0 - suppress_child_indent, 0 - suppress_child_indent);
     }
 
 private:
     int indent_width = 4;
     int suppress_indent;
+    int suppress_child_indent;
 
     BaseElement[] children;
     int sep_lines;
