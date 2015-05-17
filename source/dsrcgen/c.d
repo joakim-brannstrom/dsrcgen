@@ -407,11 +407,11 @@ class Suite(T) : T {
             return this;
         }
         else static if (op == "~" && is(T == E)) {
-            content = content ~ rhs.content;
+            content = content ~ " " ~ rhs.content;
             return this;
         }
         else static if (op == "~") {
-            content = content ~ " " ~ to!string(rhs);
+            content = content ~ to!string(rhs);
             return this;
         }
         else {
