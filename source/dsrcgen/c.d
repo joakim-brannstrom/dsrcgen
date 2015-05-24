@@ -386,7 +386,7 @@ class Suite(T) : T {
 
     auto opUnary(string op)() {
         static if (op == "+" || op == "-" || op == "*" || op == "++" || op == "--") {
-            content = mixin("\"" ~ op ~ "\"content~\"");
+            content = mixin("\"" ~ op ~ "\"~content");
             return this;
         }
         else {
