@@ -13,38 +13,33 @@ version (unittest) {
     shared static this() {
         import std.exception;
 
-        //runUnitTests!app(new JsonTestResultWriter("results.json"));
         enforce(runUnitTests!(dsrcgen.c)(new ConsoleTestResultWriter), "Unit tests failed.");
     }
 }
 
 ///TODO: change to c-comment and make a separate for c++.
+/** Affected by attribute begin
+ * begin ~ comment
+ */
 class Comment : BaseModule {
-    string contents;
+    mixin Attrs;
+
+    private string contents;
     this(string contents) {
         this.contents = contents;
     }
 
     override string renderIndent(int parent_level, int level) {
+        if ("begin" in attrs) {
+            return indent(attrs["begin"] ~ contents, parent_level, level);
+        }
+
         return indent("// " ~ contents, parent_level, level);
     }
 }
 
 mixin template CModuleX() {
-    import std.string;
-
-    string[string] attrs;
-
-    auto opIndex(T...)(T kvs) {
-        foreach (kv; kvs) {
-            attrs[kv.k] = kv.v;
-        }
-        return this;
-    }
-
-    auto opDollar(int dim)() {
-        return AttrSetter.instance;
-    }
+    mixin Attrs;
 
     auto comment(string comment) {
         auto e = new Comment(comment);
@@ -58,8 +53,6 @@ mixin template CModuleX() {
         append(e);
         return e;
     }
-
-    alias opCall = text;
 
     auto base() {
         auto e = new typeof(this);

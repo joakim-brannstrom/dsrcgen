@@ -4,7 +4,7 @@
 /// Author: Joakim Brännström (joakim.brannstrom@gmx.com)
 module dsrcgen.base;
 
-struct KV {
+private struct KV {
     string k;
     string v;
 
@@ -16,7 +16,7 @@ struct KV {
     }
 }
 
-struct AttrSetter {
+package struct AttrSetter {
     static AttrSetter instance;
 
     template opDispatch(string name) {
@@ -28,6 +28,25 @@ struct AttrSetter {
                 return KV(name, v);
             }
         }
+    }
+}
+
+public:
+
+mixin template Attrs() {
+    import std.string;
+
+    public string[string] attrs;
+
+    auto opIndex(T...)(T kvs) {
+        foreach (kv; kvs) {
+            attrs[kv.k] = kv.v;
+        }
+        return this;
+    }
+
+    auto opDollar(int dim)() {
+        return AttrSetter.instance;
     }
 }
 
