@@ -24,6 +24,34 @@ mixin template CppModuleX() {
         return stmt("friend " ~ expr);
     }
 
+    auto static_cast(string type, string expr) {
+        return stmt("static_cast<" ~ type ~ ">(" ~ expr ~ ")");
+    }
+
+    auto dynamic_cast(string type, string expr) {
+        return stmt("dynamic_cast<" ~ type ~ ">(" ~ expr ~ ")");
+    }
+
+    auto reinterpret_cast(string type, string expr) {
+        return stmt("reinterpret_cast<" ~ type ~ ">(" ~ expr ~ ")");
+    }
+
+    auto const_cast(string type, string expr) {
+        return stmt("const_cast<" ~ type ~ ">(" ~ expr ~ ")");
+    }
+
+    auto new_(string expr) {
+        return stmt("new " ~ expr);
+    }
+
+    auto delete_(string expr) {
+        return stmt("delete " ~ expr);
+    }
+
+    auto delete_array(string expr) {
+        return stmt("delete [] " ~ expr);
+    }
+
     // Suites
     /** Suites for C++ definitions for a class.
      * Useful for implementiong ctor, dtor and member methods for a class.
@@ -262,4 +290,42 @@ private:
 
     auto rval = x.render();
     assert(rval == expect, rval);
+}
+
+@name("Test of cast statements")
+unittest {
+    auto expect = "    static_cast<char>(foo);
+    dynamic_cast<char*>(bar);
+    reinterpret_cast<int>(wart);
+    const_cast<const int>(driver);
+";
+
+    auto x = new CppModule;
+    with (x) {
+        static_cast("char", "foo");
+        dynamic_cast("char*", "bar");
+        reinterpret_cast("int", "wart");
+        const_cast("const int", "driver");
+    }
+
+    auto r = x.render;
+    assert(expect == r, r);
+}
+
+@name("Test new and delete")
+unittest {
+    auto expect = "    new foo;
+    delete bar;
+    delete [] wart;
+";
+
+    auto x = new CppModule;
+    with (x) {
+        new_("foo");
+        delete_("bar");
+        delete_array("wart");
+    }
+
+    auto r = x.render;
+    assert(expect == r, r);
 }
