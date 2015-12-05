@@ -402,8 +402,9 @@ pure struct E {
         }
     }
 
-    auto opAssign(T)(T rhs) pure nothrow const {
-        return E(content ~ " = " ~ to!string(rhs));
+    auto opAssign(T)(T rhs) pure nothrow {
+        this.content ~= " = " ~ to!string(rhs);
+        return this;
     }
 }
 
@@ -850,4 +851,16 @@ L1 1.2.1 {
 
     auto rval = x.render();
     assert(rval == expect, rval);
+}
+
+unittest {
+    auto expect = "    a = p;
+";
+
+    auto m = new CModule;
+    auto e = E("a");
+    e = E("p");
+    m.stmt(e);
+
+    assert(expect == m.render, m.render);
 }

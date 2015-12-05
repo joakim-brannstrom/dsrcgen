@@ -16,22 +16,6 @@ mixin template CppModuleX() {
         return stmt("friend " ~ expr);
     }
 
-    auto static_cast(string type, string expr) {
-        return stmt("static_cast<" ~ type ~ ">(" ~ expr ~ ")");
-    }
-
-    auto dynamic_cast(string type, string expr) {
-        return stmt("dynamic_cast<" ~ type ~ ">(" ~ expr ~ ")");
-    }
-
-    auto reinterpret_cast(string type, string expr) {
-        return stmt("reinterpret_cast<" ~ type ~ ">(" ~ expr ~ ")");
-    }
-
-    auto const_cast(string type, string expr) {
-        return stmt("const_cast<" ~ type ~ ">(" ~ expr ~ ")");
-    }
-
     auto new_(string expr) {
         return stmt("new " ~ expr);
     }
@@ -235,6 +219,75 @@ struct CppHModule {
     }
 }
 
+/** Template expressions in C++.
+ *
+ * Convenient when using templates.
+ *
+ * a = Et("static_cast")("char*");
+ * b = a("foo"); // static_cast<char*>(foo);
+ * c = a("bar"); // static_cast<char*>(bar);
+ *
+ * v = Et("vector")("int");
+ * v0 = v ~ E("foo"); // vector<int> foo;
+ * v1 = v("bar"); // vector<int>(bar);
+ */
+pure struct Et {
+    import dsrcgen.c : E;
+    import std.conv : to;
+    import std.string : format;
+    import std.traits : isSomeString;
+
+    private string tmpl;
+
+    struct Ett {
+        private string tmpl;
+        private string params;
+
+        this(string tmpl, string params) pure nothrow {
+            this.tmpl = tmpl;
+            this.params = params;
+        }
+
+        auto opCall(T)(T value) pure const nothrow {
+            return E(this.toString)(value);
+        }
+
+        // implicit
+        @property string toString() pure const nothrow {
+            return tmpl ~ "<" ~ params ~ ">";
+        }
+
+        alias toString this;
+
+        // explicit
+        T opCast(T : string)() pure const nothrow {
+            return tmpl ~ "<" ~ params ~ ">";
+        }
+
+        auto opBinary(string op, T)(in T rhs) pure const nothrow {
+            static if (op == "~" && is(T == E)) {
+                return E(toString() ~ " " ~ rhs.toString);
+            } else static if (op == "~") {
+                return E(toString() ~ " " ~ to!string(rhs));
+            } else {
+                static assert(0, "Operator " ~ op ~ " not implemented");
+            }
+        }
+    }
+
+    this(T)(T tmpl) pure nothrow if (isSomeString!T) {
+        this.tmpl = tmpl;
+    }
+
+    this(T)(T tmpl) pure nothrow if (!isSomeString!T) {
+        this.tmpl = to!string(tmpl);
+    }
+
+    auto opCall(T)(T params) pure const nothrow {
+        return Ett(tmpl, to!string(params));
+    }
+}
+
 //@name("Test of C++ suits")
 unittest {
     string expect = "
@@ -281,26 +334,6 @@ private:
     assert(rval == expect, rval);
 }
 
-//@name("Test of cast statements")
-unittest {
-    auto expect = "    static_cast<char>(foo);
-    dynamic_cast<char*>(bar);
-    reinterpret_cast<int>(wart);
-    const_cast<const int>(driver);
-";
-
-    auto x = new CppModule;
-    with (x) {
-        static_cast("char", "foo");
-        dynamic_cast("char*", "bar");
-        reinterpret_cast("int", "wart");
-        const_cast("const int", "driver");
-    }
-
-    auto r = x.render;
-    assert(expect == r, r);
-}
-
 //@name("Test new and delete")
 unittest {
     auto expect = "    new foo;
@@ -317,4 +350,28 @@ unittest {
 
     auto r = x.render;
     assert(expect == r, r);
+}
+
+// Test Et composition.
+unittest {
+    auto m = new CppModule;
+    m.suppressIndent(1);
+
+    auto expect = "static_cast<char*>(foo);
+static_cast<char*>(bar);
+";
+    auto a = Et("static_cast")("char*");
+    m.stmt(a("foo"));
+    m.stmt(a("bar"));
+    assert(expect == m.render, m.render);
+
+    m = new CppModule;
+    m.suppressIndent(1);
+    expect = "vector<int> foo;
+vector<int>(bar);
+";
+    auto v = Et("vector")("int");
+    m.stmt(v ~ E("foo"));
+    m.stmt(v("bar"));
+    assert(expect == m.render, m.render);
 }
