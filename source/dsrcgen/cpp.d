@@ -180,6 +180,21 @@ mixin template CppModuleX() {
             params, const_ ? " const" : ""));
         return e;
     }
+
+    auto method_inline(bool virtual_, string return_type, string name, bool const_) {
+        auto e = suite(format("%s%s %s()%s", virtual_ ? "virtual " : "",
+            return_type, name, const_ ? " const" : ""));
+        return e;
+    }
+
+    auto method_inline(T...)(bool virtual_, string return_type, string name,
+        bool const_, auto ref T args) {
+        string params = this.paramsToString(args);
+
+        auto e = suite(format("%s%s %s(%s)%s", virtual_ ? "virtual " : "",
+            return_type, name, params, const_ ? " const" : ""));
+        return e;
+    }
 }
 
 class CppModule : BaseModule {
@@ -374,4 +389,16 @@ vector<int>(bar);
     m.stmt(v ~ E("foo"));
     m.stmt(v("bar"));
     assert(expect == m.render, m.render);
+}
+
+// should generate an inlined class method
+unittest {
+    auto expect = "    void foo() {
+    }
+    void bar(int foo) {
+    }";
+
+    auto m = new CppModule;
+    m.method_inline(false, "void", "foo", false);
+    m.method_inline(false, "void", "foo", false, "int", "foo");
 }
