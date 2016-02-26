@@ -710,8 +710,7 @@ content text
 #endif // somefile_hpp
 footer text
 // footer comment
-",
-        hdr.render);
+", hdr.render);
 }
 
 //@name("Test of Expression. Type conversion")
