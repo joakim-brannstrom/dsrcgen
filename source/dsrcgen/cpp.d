@@ -396,9 +396,12 @@ unittest {
     auto expect = "    void foo() {
     }
     void bar(int foo) {
-    }";
+    }
+";
 
     auto m = new CppModule;
     m.method_inline(false, "void", "foo", false);
-    m.method_inline(false, "void", "foo", false, "int", "foo");
+    m.method_inline(false, "void", "bar", false, "int foo");
+
+    assert(expect == m.render, m.render);
 }
