@@ -101,8 +101,7 @@ mixin template CModuleX() {
         if (f.length > 1 && f[0] == '<') {
             incl = format("#include %s", f);
         } else {
-            ///TODO ugly way. Does other string literals exist that could be used instead?
-            incl = format("#include %s%s%s", '"', f, '"');
+            incl = format(`#include "%s"`, f);
         }
 
         auto e = stmt(incl)[$.end = ""];
@@ -710,8 +709,7 @@ content text
 #endif // somefile_hpp
 footer text
 // footer comment
-",
-        hdr.render);
+", hdr.render);
 }
 
 //@name("Test of Expression. Type conversion")
