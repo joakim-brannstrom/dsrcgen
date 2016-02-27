@@ -101,8 +101,7 @@ mixin template CModuleX() {
         if (f.length > 1 && f[0] == '<') {
             incl = format("#include %s", f);
         } else {
-            ///TODO ugly way. Does other string literals exist that could be used instead?
-            incl = format("#include %s%s%s", '"', f, '"');
+            incl = format(`#include "%s"`, f);
         }
 
         auto e = stmt(incl)[$.end = ""];
