@@ -132,7 +132,7 @@ class BaseModule : BaseElement {
         sep_lines = 0;
     }
 
-    string indent(string s, int parent_level, int level) {
+    string indent(string s, int parent_level, int level) const {
         import std.algorithm : max;
         import std.conv : to;
 
