@@ -11,6 +11,7 @@
 At the moment dsrcgen supports:
  * C
  * C++
+ * Plantuml
 
 Any help to add support for new languages are appreciated.
 
