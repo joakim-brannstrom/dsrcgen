@@ -48,13 +48,13 @@ mixin template CppModuleX() {
      */
     auto class_suite(string class_name, string headline) {
         auto tmp = format("%s::%s", class_name, headline);
-        auto e = suite(tmp, true);
+        auto e = suite(tmp, Yes.AddSep);
         return e;
     }
 
     auto class_suite(string rval, string class_name, string headline) {
         auto tmp = format("%s %s::%s", rval, class_name, headline);
-        auto e = suite(tmp, true);
+        auto e = suite(tmp, Yes.AddSep);
         return e;
     }
 
@@ -132,21 +132,21 @@ mixin template CppModuleX() {
     }
 
     auto public_() {
-        auto e = suite("public:", false)[$.begin = "", $.end = ""];
+        auto e = suite("public:", No.AddSep)[$.begin = "", $.end = ""];
         e.suppressThisIndent(1);
         e.sep;
         return e;
     }
 
     auto protected_() {
-        auto e = suite("protected:", false)[$.begin = "", $.end = ""];
+        auto e = suite("protected:", No.AddSep)[$.begin = "", $.end = ""];
         e.suppressThisIndent(1);
         e.sep;
         return e;
     }
 
     auto private_() {
-        auto e = suite("private:", false)[$.begin = "", $.end = ""];
+        auto e = suite("private:", No.AddSep)[$.begin = "", $.end = ""];
         e.suppressThisIndent(1);
         e.sep;
         return e;
